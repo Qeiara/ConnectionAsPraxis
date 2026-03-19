@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C&C Design Lab — Work Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0f0e0b;
+  --black-soft: #1c1b17;
+  --yellow: #f5c800;
+  --yellow-pale: #fdf8d8;
+  --yellow-ghost: #fffdf0;
+  --cream: #faf8f2;
+  --cream-mid: #ede9e0;
+  --ink: #1c1b17;
+  --ink-soft: #4a4840;
+  --ink-muted: #8a8778;
+  --white: #ffffff;
+  --green: #1a6b45;
+  --green-light: #e4f5ec;
+  --blue: #1a4a7a;
+  --blue-light: #e4eef8;
+  --amber: #b85c00;
+  --amber-light: #fdf0e0;
+  --red: #8b1a1a;
+  --red-light: #fde8e8;
+  --purple: #4a2080;
+  --purple-light: #efe8f8;
+  --mono: 'IBM Plex Mono', monospace;
+  --serif: 'Playfair Display', serif;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 4px;
+  --radius-lg: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--cream); color: var(--ink); font-size: 14px; }
+
+/* ── HEADER ── */
+.site-header {
+  background: var(--black);
+  border-bottom: 3px solid var(--yellow);
+  padding: 1.25rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-left {}
+.header-eyebrow { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(255,255,255,0.4); margin-bottom: 3px; }
+.header-title { font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--white); }
+.header-title span { color: var(--yellow); }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.phase-badge { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; padding: 5px 12px; border-radius: var(--radius); background: rgba(245,200,0,0.15); color: var(--yellow); border: 1px solid rgba(245,200,0,0.3); }
+
+/* ── NAV TABS ── */
+.nav-bar { background: var(--black-soft); border-bottom: 1px solid rgba(255,255,255,0.07); padding: 0 2rem; display: flex; gap: 2px; overflow-x: auto; }
+.nav-tab { font-family: var(--mono); font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.4); padding: 10px 14px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: all 0.15s; }
+.nav-tab:hover { color: rgba(255,255,255,0.7); }
+.nav-tab.on { color: var(--yellow); border-bottom-color: var(--yellow); font-weight: 500; }
+
+/* ── LAYOUT ── */
+.page { display: none; padding: 2rem; max-width: 960px; }
+.page.on { display: block; }
+
+/* ── SECTION HEADINGS ── */
+.section-title { font-family: var(--serif); font-size: 20px; font-weight: 700; color: var(--black); margin-bottom: 4px; }
+.section-sub { font-size: 12px; color: var(--ink-muted); font-style: italic; margin-bottom: 1.5rem; line-height: 1.6; }
+hr.divider { border: none; border-top: 1px solid var(--cream-mid); margin: 1.75rem 0; }
+
+/* ── STATS ROW ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+.stat-card { background: var(--white); border: 1px solid var(--cream-mid); border-top: 3px solid var(--yellow); padding: 1rem 1.1rem; border-radius: var(--radius); }
+.stat-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 6px; }
+.stat-value { font-family: var(--serif); font-size: 30px; font-weight: 700; color: var(--black); line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--ink-muted); margin-top: 4px; font-weight: 300; }
+
+/* ── TIMELINE ── */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--cream-mid); }
+.tl-item { position: relative; margin-bottom: 10px; }
+.tl-dot { position: absolute; left: -24px; top: 14px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--cream-mid); background: var(--white); z-index: 1; transition: all 0.2s; }
+.tl-item.done .tl-dot { background: var(--green); border-color: var(--green); }
+.tl-item.active .tl-dot { background: var(--yellow); border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(245,200,0,0.2); }
+.tl-item.upcoming .tl-dot { background: var(--white); border-color: var(--cream-mid); }
+
+.tl-card { background: var(--white); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 12px 14px; cursor: pointer; transition: all 0.15s; }
+.tl-card:hover { border-color: rgba(30,28,24,0.2); }
+.tl-item.done .tl-card { border-left: 3px solid var(--green); }
+.tl-item.active .tl-card { border-left: 3px solid var(--yellow); background: var(--yellow-ghost); }
+.tl-item.upcoming .tl-card { opacity: 0.7; }
+
+.tl-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.tl-date { font-family: var(--mono); font-size: 10px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.tl-type { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 20px; }
+.type-youth { background: var(--green-light); color: var(--green); }
+.type-sme { background: var(--blue-light); color: var(--blue); }
+.type-cc { background: var(--amber-light); color: var(--amber); }
+.type-steering { background: var(--purple-light); color: var(--purple); }
+.tl-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+.tl-phase { font-size: 11px; color: var(--ink-muted); font-style: italic; }
+.tl-status { font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+.status-done { color: var(--green); }
+.status-active { color: var(--amber); }
+.status-upcoming { color: var(--ink-muted); }
+
+.tl-expand { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
+.tl-expand.open { display: block; }
+
+/* ── FORM ELEMENTS ── */
+.field { margin-bottom: 1.1rem; }
+.field-label { display: block; font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 5px; }
+.field-hint { font-size: 11px; color: var(--ink-muted); font-style: italic; margin-bottom: 5px; line-height: 1.5; }
+textarea, input[type=text], input[type=date], input[type=number], select {
+  width: 100%; padding: 9px 12px; font-family: var(--sans); font-size: 13px; font-weight: 300;
+  color: var(--ink); background: var(--white); border: 1px solid var(--cream-mid);
+  border-radius: var(--radius); outline: none; transition: border-color 0.15s; line-height: 1.6;
+}
+textarea:focus, input:focus, select:focus { border-color: var(--yellow); }
+textarea { min-height: 70px; resize: vertical; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ── ACTIVITY LOG ── */
+.log-entry { background: var(--white); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
+.log-entry:hover { border-color: rgba(30,28,24,0.15); }
+.log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.log-body { flex: 1; }
+.log-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 3px; }
+.log-type-badge { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 20px; }
+.log-date { font-family: var(--mono); font-size: 10px; color: var(--ink-muted); }
+.log-hrs { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--amber); }
+.log-notes { font-size: 12px; color: var(--ink-soft); font-weight: 300; line-height: 1.5; margin-top: 2px; }
+.log-layer { font-size: 11px; color: var(--ink-muted); font-style: italic; margin-top: 2px; }
+
+/* ── INVISIBLE LABOR ── */
+.labor-card { background: var(--black); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 10px; border-left: 4px solid var(--yellow); }
+.labor-card h4 { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--yellow); margin-bottom: 6px; }
+.labor-card p { font-size: 13px; font-weight: 300; color: rgba(255,255,255,0.7); line-height: 1.7; }
+.labor-entry { background: var(--white); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 8px; }
+.labor-entry-date { font-family: var(--mono); font-size: 10px; color: var(--ink-muted); margin-bottom: 4px; }
+.labor-entry-cat { display: inline-block; font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 20px; background: var(--black); color: var(--yellow); margin-bottom: 6px; }
+.labor-entry-text { font-size: 13px; font-weight: 300; color: var(--ink); line-height: 1.6; }
+
+/* ── STORY ARCHIVE ── */
+.story-card { background: var(--white); border: 1px solid var(--cream-mid); border-left: 4px solid var(--yellow); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 10px; }
+.story-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.story-who { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 20px; background: var(--green-light); color: var(--green); }
+.story-session { font-family: var(--mono); font-size: 10px; color: var(--ink-muted); }
+.story-date { font-family: var(--mono); font-size: 10px; color: var(--ink-muted); }
+.story-text { font-size: 14px; font-weight: 300; color: var(--ink); line-height: 1.8; font-style: italic; }
+.story-why { font-size: 12px; color: var(--ink-muted); margin-top: 8px; line-height: 1.6; }
+
+/* ── DELIVERABLES ── */
+.deliverable-card { background: var(--white); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 10px; }
+.deliv-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.deliv-name { font-size: 14px; font-weight: 500; color: var(--ink); }
+.deliv-status-select { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 20px; border: 1px solid var(--cream-mid); background: var(--cream); cursor: pointer; width: auto; }
+.progress-bar { height: 5px; background: var(--cream-mid); border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.progress-fill { height: 100%; background: var(--yellow); border-radius: 3px; transition: width 0.4s ease; }
+.deliv-notes { font-size: 12px; color: var(--ink-muted); line-height: 1.6; }
+
+/* ── BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; border-radius: var(--radius); cursor: pointer; border: 1px solid var(--cream-mid); background: var(--white); color: var(--ink-soft); transition: all 0.15s; }
+.btn:hover { background: var(--cream-mid); color: var(--ink); }
+.btn-primary { background: var(--black); color: var(--yellow); border-color: var(--black); }
+.btn-primary:hover { background: var(--black-soft); }
+.btn-sm { padding: 5px 12px; font-size: 10px; }
+
+/* ── MODAL ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,14,11,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--cream); border-top: 3px solid var(--yellow); border-radius: var(--radius-lg); padding: 1.5rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.modal-title { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--black); }
+.modal-close { font-size: 18px; cursor: pointer; color: var(--ink-muted); background: none; border: none; line-height: 1; }
+
+/* ── CHIPS ── */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { padding: 4px 10px; border-radius: 20px; font-family: var(--mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid var(--cream-mid); cursor: pointer; user-select: none; transition: all 0.12s; color: var(--ink-soft); background: var(--white); }
+.chip:hover { border-color: var(--black); color: var(--black); }
+.chip.on { background: var(--black); border-color: var(--black); color: var(--yellow); }
+
+/* ── RESOURCE CARDS ── */
+.resource-card { display:flex; gap:0; border:1px solid var(--cream-mid); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:10px; background:var(--white); transition:border-color 0.15s; }
+.resource-card:hover { border-color:rgba(30,28,24,0.2); }
+.resource-placeholder { opacity:0.6; }
+.resource-thumb { width:120px; flex-shrink:0; min-height:90px; display:flex; align-items:center; justify-content:center; background:var(--cream); }
+.resource-thumb-placeholder { background:var(--cream-mid); }
+.resource-body { flex:1; padding:12px 16px; display:flex; flex-direction:column; gap:5px; }
+.resource-tag { display:inline-block; font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:0.06em; padding:2px 8px; border-radius:20px; font-weight:500; width:fit-content; }
+.resource-name { font-size:14px; font-weight:500; color:var(--ink); line-height:1.3; }
+.resource-desc { font-size:12px; font-weight:300; color:var(--ink-soft); line-height:1.6; flex:1; }
+.resource-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:4px; }
+.resource-btn { font-family:var(--mono); font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; padding:5px 12px; border-radius:var(--radius); border:1px solid var(--cream-mid); background:var(--white); color:var(--ink-soft); cursor:pointer; text-decoration:none; transition:all 0.15s; display:inline-block; }
+.resource-btn:hover { background:var(--cream-mid); color:var(--ink); }
+.resource-btn-disabled { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-muted); font-style:italic; }
+
+/* ── ROADMAP ZOOM ── */
+.roadmap-zoomed { cursor:zoom-out !important; max-height:none; }
+
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(60px); background: var(--black); color: var(--yellow); padding: 9px 20px; border-radius: var(--radius); font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; z-index: 999; transition: transform 0.25s ease; pointer-events: none; border-top: 2px solid var(--yellow); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 3rem 2rem; color: var(--ink-muted); }
+.empty-icon { font-size: 28px; opacity: 0.3; margin-bottom: 0.75rem; }
+.empty p { font-size: 13px; font-weight: 300; line-height: 1.7; }
+
+/* ── CONTEXT SECTIONS ── */
+.ctx-block { border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); margin-bottom: 10px; background: var(--white); overflow: hidden; }
+.ctx-header { display: flex; align-items: center; gap: 14px; padding: 14px 18px; cursor: pointer; transition: background 0.12s; }
+.ctx-header:hover { background: var(--cream); }
+.ctx-num { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--yellow); background: var(--black); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 2px; flex-shrink: 0; }
+.ctx-title { font-size: 14px; font-weight: 500; color: var(--ink); flex: 1; line-height: 1.4; }
+.ctx-chev { font-size: 12px; color: var(--ink-muted); font-family: var(--mono); transition: transform 0.2s; flex-shrink: 0; }
+.ctx-body { display: none; padding: 0 18px 18px 18px; }
+.ctx-body.open { display: block; }
+.ctx-body p { font-size: 13px; font-weight: 300; color: var(--ink-soft); line-height: 1.85; margin-bottom: 1rem; }
+.ctx-body p:last-child { margin-bottom: 0; }
+.ctx-body strong { font-weight: 500; color: var(--ink); }
+.ctx-body em { font-style: italic; color: var(--ink-soft); }
+.ctx-quote { background: var(--black); color: rgba(255,255,255,0.85); font-family: var(--serif); font-style: italic; font-size: 14px; line-height: 1.7; padding: 1.1rem 1.4rem; border-left: 4px solid var(--yellow); border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; }
+.ctx-stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 1rem 0; }
+.ctx-stat { background: var(--cream); border: 1px solid var(--cream-mid); border-top: 3px solid var(--yellow); border-radius: var(--radius); padding: 12px; }
+.ctx-stat-num { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--black); margin-bottom: 4px; }
+.ctx-stat-label { font-size: 12px; font-weight: 300; color: var(--ink-soft); line-height: 1.5; }
+.ctx-deliverable-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1rem 0; }
+.ctx-deliverable { background: var(--cream); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 1.1rem; }
+.ctx-deliv-num { font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--yellow); background: var(--black); display: inline-block; padding: 2px 8px; border-radius: 2px; margin-bottom: 8px; letter-spacing: 0.06em; }
+.ctx-deliv-name { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 6px; line-height: 1.3; }
+.ctx-deliv-desc { font-size: 12px; font-weight: 300; color: var(--ink-soft); line-height: 1.7; }
+.ctx-process-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 1rem 0; padding: 1rem; background: var(--black); border-radius: var(--radius-lg); }
+.ctx-process-item { flex: 1; min-width: 70px; text-align: center; }
+.ctx-process-word { font-family: var(--mono); font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--yellow); }
+.ctx-process-arrow { font-family: var(--mono); font-size: 14px; color: rgba(255,255,255,0.2); flex-shrink: 0; }
+.ctx-who-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 1rem 0; }
+.ctx-who-card { border-radius: var(--radius-lg); padding: 1rem; }
+.ctx-who-youth { background: var(--green-light); border: 1px solid rgba(26,107,69,0.2); }
+.ctx-who-sme { background: var(--blue-light); border: 1px solid rgba(26,74,122,0.2); }
+.ctx-who-cc { background: var(--amber-light); border: 1px solid rgba(184,92,0,0.2); }
+.ctx-who-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-bottom: 6px; }
+.ctx-who-youth .ctx-who-label { color: var(--green); }
+.ctx-who-sme .ctx-who-label { color: var(--blue); }
+.ctx-who-cc .ctx-who-label { color: var(--amber); }
+.ctx-who-desc { font-size: 12px; font-weight: 300; color: var(--ink-soft); line-height: 1.6; }
+.ctx-success-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 1rem 0; }
+.ctx-success-card { background: var(--cream); border: 1px solid var(--cream-mid); border-radius: var(--radius-lg); padding: 1rem; }
+.ctx-success-icon { font-size: 12px; margin-bottom: 6px; }
+.ctx-success-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-muted); margin-bottom: 6px; font-weight: 500; }
+.ctx-success-desc { font-size: 12px; font-weight: 300; color: var(--ink-soft); line-height: 1.65; }
+
+@media (max-width: 640px) {
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .g2, .g3 { grid-template-columns: 1fr; }
+  .page { padding: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="site-header" style="position:relative">
+  <div class="header-left">
+    <div class="header-eyebrow">Connection as Praxis · HEY! Initiative</div>
+    <div class="header-title">C&C <span>Design Lab</span> Tracker</div>
+  </div>
+  <div class="header-right" style="display:flex;align-items:center;gap:10px">
+    <div class="phase-badge" id="current-phase-badge">Phase 2 — Build</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:4px">
+        <a href="index.html" style="font-family:var(--mono);font-size:11px;letter-spacing:0.04em;color:rgba(255,255,255,0.35);text-decoration:none;text-transform:uppercase;transition:color 0.15s" onmouseover="this.style.color='rgba(255,255,255,0.7)'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">Dashboard</a>
+        <span style="color:rgba(255,255,255,0.15);font-size:11px;margin:0 2px">/</span>
+        <span style="font-family:var(--mono);font-size:11px;letter-spacing:0.04em;color:rgba(255,255,255,0.75);text-transform:uppercase">C&amp;C Design Lab</span>
+      </div>
+      <button onclick="togglePagesMenu()" id="pages-btn" style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:3px;border:1px solid rgba(255,255,255,0.12);background:none;cursor:pointer;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:rgba(255,255,255,0.4);transition:all 0.15s;margin-left:4px">
+        <div style="display:flex;flex-direction:column;gap:2.5px"><div style="width:11px;height:1.5px;background:currentColor;border-radius:1px"></div><div style="width:11px;height:1.5px;background:currentColor;border-radius:1px"></div><div style="width:11px;height:1.5px;background:currentColor;border-radius:1px"></div></div>
+        Pages
+      </button>
+    </div>
+  </div>
+  <!-- DROPDOWN MENU -->
+  <div id="pages-menu" style="display:none;position:absolute;top:100%;right:2rem;background:#1c1b17;border:1px solid rgba(255,255,255,0.1);border-radius:var(--radius-lg);padding:6px;min-width:200px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+    <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.25);padding:6px 8px 3px">Public</div>
+    <a href="index.html#public" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;transition:all 0.12s" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='rgba(255,255,255,0.85)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,0.5)'"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> Home</a>
+    <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.25);padding:6px 8px 3px;margin-top:2px">Private</div>
+    <a href="index.html" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;transition:all 0.12s" onmouseover="this.style.background='rgba(255,255,255,0.05)';this.style.color='rgba(255,255,255,0.85)'" onmouseout="this.style.background='';this.style.color='rgba(255,255,255,0.5)'"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> Dashboard</a>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:#f5c800;background:rgba(245,200,0,0.07)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> C&amp;C Design Lab</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:rgba(255,255,255,0.2)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> Treatment <span style="font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:8px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.2);margin-left:auto">soon</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:rgba(255,255,255,0.2)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> Fellows <span style="font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:8px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.2);margin-left:auto">soon</span></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:4px;font-size:12px;color:rgba(255,255,255,0.2)"><span style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;display:inline-block"></span> Schools <span style="font-size:8px;font-family:var(--mono);padding:1px 5px;border-radius:8px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.2);margin-left:auto">soon</span></div>
+  </div>
+</header>
+
+<nav class="nav-bar">
+  <button class="nav-tab on" onclick="goPage('overview', this)">Overview</button>
+  <button class="nav-tab" onclick="goPage('timeline', this)">Session timeline</button>
+  <button class="nav-tab" onclick="goPage('activity', this)">Activity log</button>
+  <button class="nav-tab" onclick="goPage('invisible', this)">Invisible labor</button>
+  <button class="nav-tab" onclick="goPage('stories', this)">Story archive</button>
+  <button class="nav-tab" onclick="goPage('deliverables', this)">Deliverables</button>
+  <button class="nav-tab" onclick="goPage('resources', this)">Resources</button>
+</nav>
+
+<!-- ══ OVERVIEW ══ -->
+<div id="page-overview" class="page on">
+
+  <!-- PROJECT CONTEXT -->
+  <div style="background:var(--black);border-radius:var(--radius-lg);padding:2rem 2.25rem;margin-bottom:2rem;position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;right:0;width:180px;height:180px;border-radius:50%;background:rgba(245,200,0,0.04);transform:translate(40%,-40%)"></div>
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:rgba(245,200,0,0.5);margin-bottom:10px">The HEY! Design Lab · Community &amp; Caregivers</div>
+    <div style="font-family:var(--serif);font-size:26px;font-weight:900;color:var(--white);line-height:1.15;margin-bottom:14px">This is not another training.<br><em style="color:var(--yellow);font-style:italic">This is where practice begins.</em></div>
+    <p style="font-size:14px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.85;max-width:680px">The Safe &amp; Trusted Ecosystem Design Lab is HEY!'s collective response to a hard truth: our region has dozens of trainings available to adults who work with youth — and yet youth continue to report that they don't have safe adults in their lives, safe spaces to exist in, or adults who truly show up for them. More knowledge has not moved the needle. Something deeper must change.</p>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="overview-stats">
+    <div class="stat-card"><div class="stat-label">Sessions complete</div><div class="stat-value" id="stat-sessions">0</div><div class="stat-sub">of 14 total</div></div>
+    <div class="stat-card"><div class="stat-label">Hours logged</div><div class="stat-value" id="stat-hours">0</div><div class="stat-sub">across all activities</div></div>
+    <div class="stat-card"><div class="stat-label">Invisible labor entries</div><div class="stat-value" id="stat-invisible">0</div><div class="stat-sub">documented</div></div>
+    <div class="stat-card"><div class="stat-label">Stories captured</div><div class="stat-value" id="stat-stories">0</div><div class="stat-sub">qualitative moments</div></div>
+  </div>
+
+  <!-- PROJECT CONTEXT — SCANNABLE CARDS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:2rem">
+
+    <div style="background:var(--white);border:1px solid var(--cream-mid);border-left:4px solid var(--yellow);border-radius:var(--radius-lg);padding:1.1rem 1.25rem">
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px">Why this exists</div>
+      <p style="font-size:13px;font-weight:300;color:var(--ink-soft);line-height:1.8">Youth across Greater Cincinnati consistently report they don't have enough safe, trusted adults in their lives — and lack community spaces where they truly belong. Our region has dozens of trainings available. Youth are still saying the same things. More knowledge has not moved the needle. What's missing is practice, shared language, and organizational cultures built to actually support youth voice and leadership.</p>
+    </div>
+
+    <div style="background:var(--white);border:1px solid var(--cream-mid);border-left:4px solid var(--black);border-radius:var(--radius-lg);padding:1.1rem 1.25rem">
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px">The gap we found</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+        <div style="text-align:center;padding:8px;background:var(--cream);border-radius:var(--radius)">
+          <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--black);line-height:1">~100%</div>
+          <div style="font-size:10px;font-weight:300;color:var(--ink-muted);line-height:1.4;margin-top:4px">of adults say they're personally ready to listen to youth</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--cream);border-radius:var(--radius)">
+          <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--black);line-height:1">40%</div>
+          <div style="font-size:10px;font-weight:300;color:var(--ink-muted);line-height:1.4;margin-top:4px">say their org is not ready to act on what youth say</div>
+        </div>
+        <div style="text-align:center;padding:8px;background:var(--cream);border-radius:var(--radius)">
+          <div style="font-family:var(--serif);font-size:22px;font-weight:700;color:var(--black);line-height:1">1 in 3</div>
+          <div style="font-size:10px;font-weight:300;color:var(--ink-muted);line-height:1.4;margin-top:4px">adults unsure if they can speak openly at work</div>
+        </div>
+      </div>
+      <p style="font-size:11px;font-weight:300;color:var(--ink-muted);font-style:italic;line-height:1.5">Source: HEY! Youth Program &amp; Power Building Assessment, 2025 — nearly 70 C&amp;C Working Group members</p>
+    </div>
+
+    <div style="background:var(--white);border:1px solid var(--cream-mid);border-left:4px solid var(--green);border-radius:var(--radius-lg);padding:1.1rem 1.25rem">
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px">What we're building</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;font-weight:500;color:var(--ink);margin-bottom:3px">Safe &amp; Trusted Adult Training</div>
+        <div style="font-size:12px;font-weight:300;color:var(--ink-soft);line-height:1.6">A youth-led experience centered on observable behavior change — not a checklist, not a certificate. Written in youth language. Delivered by youth.</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--ink);margin-bottom:3px">Safe Spaces Cohort Model</div>
+        <div style="font-size:12px;font-weight:300;color:var(--ink-soft);line-height:1.6">A long-term organizational journey — groups of orgs learning and shifting together, with youth at every stage. Not an event. A practice.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--black);border-radius:var(--radius-lg);padding:1.1rem 1.25rem">
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(245,200,0,0.5);margin-bottom:8px">How this works</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Practice</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:12px">→</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Learn</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:12px">→</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Fail</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:12px">→</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Adjust</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:12px">→</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Evolve</span>
+        <span style="color:rgba(255,255,255,0.2);font-size:12px">→</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:500;color:var(--yellow)">Share</span>
+      </div>
+      <p style="font-size:12px;font-weight:300;color:rgba(255,255,255,0.6);line-height:1.7">This work is iterative by design. The Design Lab is not a one-time investment with a final deliverable. It is the start of a living infrastructure — one that gets better over time as organizations practice, reflect, and build the muscle of relational, youth-centered culture together.</p>
+    </div>
+
+  </div>
+
+  <!-- VISION ROADMAP -->
+  <div style="margin-bottom:2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--black)">Vision roadmap</div>
+        <div style="font-size:12px;color:var(--ink-muted);font-style:italic;margin-top:2px">Where we've been, where we are, where we're headed — pinch or scroll to zoom</div>
+      </div>
+      <a href="https://qeiara.github.io/ConnectionAsPraxis/roadmap.jpg" target="_blank" style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.06em;padding:6px 14px;border:1px solid var(--cream-mid);border-radius:var(--radius);background:var(--white);color:var(--ink-soft);text-decoration:none;transition:all 0.15s">Open full size ↗</a>
+    </div>
+    <div style="border:1px solid var(--cream-mid);border-radius:var(--radius-lg);overflow:hidden;background:var(--white);position:relative">
+      <img
+        src="https://qeiara.github.io/ConnectionAsPraxis/roadmap.jpg"
+        alt="HEY! Community & Caregivers Vision Roadmap — Foundation 2023 through Future 2027"
+        style="width:100%;height:auto;display:block;cursor:zoom-in"
+        onclick="toggleRoadmapZoom(this)"
+        title="Click to zoom"
+      >
+      <div style="position:absolute;bottom:10px;right:10px;font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.08em;background:rgba(15,14,11,0.7);color:rgba(255,255,255,0.7);padding:4px 10px;border-radius:20px;pointer-events:none">Click to zoom</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <div class="section-title">Activity by type</div>
+  <div class="section-sub">Running totals across all logged activity</div>
+  <div id="overview-bars" style="margin-bottom:1.5rem"></div>
+
+  <div class="section-title">Recent entries</div>
+  <div class="section-sub" style="margin-bottom:1rem">Last 5 logged activities</div>
+  <div id="overview-recent"></div>
+
+</div>
+
+<!-- ══ TIMELINE ══ -->
+<div id="page-timeline" class="page">
+  <div class="section-title">Design Lab session timeline</div>
+  <div class="section-sub">12-week arc from February through May 2026. Click any session to log notes or mark complete.</div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:1.5rem">
+    <span style="font-family:var(--mono);font-size:10px;display:flex;align-items:center;gap:5px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:50%;background:var(--green);display:inline-block"></span> Complete</span>
+    <span style="font-family:var(--mono);font-size:10px;display:flex;align-items:center;gap:5px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:50%;background:var(--yellow);display:inline-block"></span> Active / recent</span>
+    <span style="font-family:var(--mono);font-size:10px;display:flex;align-items:center;gap:5px;color:var(--ink-muted)"><span style="width:10px;height:10px;border-radius:50%;background:var(--cream-mid);display:inline-block"></span> Upcoming</span>
+  </div>
+
+  <div class="timeline" id="timeline-list"></div>
+</div>
+
+<!-- ══ ACTIVITY LOG ══ -->
+<div id="page-activity" class="page">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
+    <div>
+      <div class="section-title">Activity log</div>
+      <div class="section-sub" style="margin-bottom:0">Every hour of work on this project, named and documented.</div>
+    </div>
+    <button class="btn btn-primary" onclick="openActivityModal()">+ Log activity</button>
+  </div>
+  <div id="activity-list"></div>
+  <div id="activity-empty" class="empty"><div class="empty-icon">◆</div><p>No activity logged yet.<br>Start capturing your time.</p></div>
+</div>
+
+<!-- ══ INVISIBLE LABOR ══ -->
+<div id="page-invisible" class="page">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+    <div>
+      <div class="section-title">Invisible labor ledger</div>
+      <div class="section-sub" style="margin-bottom:0">The work that doesn't show up in agendas, meeting notes, or job descriptions — but makes everything else possible.</div>
+    </div>
+    <button class="btn btn-primary" onclick="openLaborModal()">+ Add entry</button>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1.5rem" id="labor-category-cards">
+    <div class="labor-card" style="padding:10px 14px">
+      <h4>Transportation</h4>
+      <p style="font-size:12px">Real-time Uber coordination, youth communication, last-minute crisis response — before and during sessions, without a system.</p>
+    </div>
+    <div class="labor-card" style="padding:10px 14px">
+      <h4>Youth emotional support</h4>
+      <p style="font-size:12px">Reading the room, responding to crises, helping youth feel safe enough to participate and lead authentically.</p>
+    </div>
+    <div class="labor-card" style="padding:10px 14px">
+      <h4>Leader-as-participant</h4>
+      <p style="font-size:12px">Synthesizing, leading, and holding the space while listed as a participant — doing the work others do on their breaks.</p>
+    </div>
+  </div>
+
+  <div id="labor-list"></div>
+  <div id="labor-empty" class="empty"><div class="empty-icon">◆</div><p>Nothing logged yet.<br>This is the place to name the work that's hardest to name.</p></div>
+</div>
+
+<!-- ══ STORY ARCHIVE ══ -->
+<div id="page-stories" class="page">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+    <div>
+      <div class="section-title">Story archive</div>
+      <div class="section-sub" style="margin-bottom:0">Qualitative moments that show the work is landing — youth breakthroughs, adult mindset shifts, moments of real connection. These are the outcomes that can't be measured in tasks.</div>
+    </div>
+    <button class="btn btn-primary" onclick="openStoryModal()">+ Capture moment</button>
+  </div>
+  <div id="story-list"></div>
+  <div id="story-empty" class="empty"><div class="empty-icon">◆</div><p>No moments captured yet.<br>What happened in the room that mattered?</p></div>
+</div>
+
+<!-- ══ DELIVERABLES ══ -->
+<div id="page-deliverables" class="page">
+  <div class="section-title">Deliverable tracker</div>
+  <div class="section-sub">Phase 1 outputs and Design Lab deliverables. Click progress bar areas to update.</div>
+
+  <div style="margin-bottom:1.5rem" id="deliverables-list"></div>
+
+  <hr class="divider">
+  <div class="section-title" style="margin-bottom:4px">Add a deliverable or milestone</div>
+  <div class="section-sub">Track anything that needs to get done — formal deliverable, internal milestone, or open question.</div>
+  <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1rem">
+    <div class="g2">
+      <div class="field"><label class="field-label">Deliverable name</label><input type="text" id="new-deliv-name" placeholder="e.g. Ecosystem narrative draft"></div>
+      <div class="field"><label class="field-label">Category</label>
+        <select id="new-deliv-cat">
+          <option>Safe Adult Training</option>
+          <option>Cohort Model Playbook</option>
+          <option>Design Lab Operations</option>
+          <option>Ecosystem Narrative</option>
+          <option>Youth Lab</option>
+          <option>SME Lab</option>
+          <option>Internal</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">Notes or context</label><textarea id="new-deliv-notes" placeholder="What does this involve? Who owns it? What's blocking it?"></textarea></div>
+    <div class="field"><label class="field-label">Progress (0–100%)</label><input type="number" id="new-deliv-pct" min="0" max="100" value="0" style="width:100px"></div>
+    <button class="btn btn-primary" onclick="addDeliverable()">Add deliverable</button>
+  </div>
+</div>
+
+<!-- ══ ACTIVITY MODAL ══ -->
+<div class="modal-overlay" id="activity-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log activity</div>
+      <button class="modal-close" onclick="closeModal('activity-modal')">✕</button>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="field-label">Date</label><input type="date" id="a-date"></div>
+      <div class="field"><label class="field-label">Hours</label><input type="number" id="a-hours" min="0.25" max="24" step="0.25" placeholder="e.g. 2.5"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Activity type</label>
+      <div class="chips" id="activity-type-chips">
+        <span class="chip" onclick="togChip(this,'atype')" data-v="SME Lab session">SME Lab session</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Youth Design Lab">Youth Design Lab</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="TiER1 1:1 strategy">TiER1 1:1 strategy</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="C&C core leadership">C&C core leadership</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="C&C Working Group">C&C Working Group</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Youth coaching">Youth coaching</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Planning and prep">Planning and prep</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Transportation coordination">Transportation</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Post-session synthesis">Post-session synthesis</span>
+        <span class="chip" onclick="togChip(this,'atype')" data-v="Stakeholder communications">Stakeholder comms</span>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Labor layer (what kind of work was this?)</label>
+      <div class="chips" id="layer-chips">
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Strategic leadership">Strategic leadership</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Youth facilitation & coaching">Youth coaching</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Logistics & operations">Logistics & ops</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Emotional support & safety">Emotional support</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Synthesis & design">Synthesis & design</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Relationship & ecosystem">Relationship building</span>
+        <span class="chip" onclick="togChip(this,'layer')" data-v="Administration">Administration</span>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">Notes</label><textarea id="a-notes" placeholder="What happened? What did this involve? What was harder than it looked?"></textarea></div>
+    <button class="btn btn-primary" onclick="saveActivity()" style="width:100%">Save activity</button>
+  </div>
+</div>
+
+<!-- ══ INVISIBLE LABOR MODAL ══ -->
+<div class="modal-overlay" id="labor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Log invisible labor</div>
+      <button class="modal-close" onclick="closeModal('labor-modal')">✕</button>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="field-label">Date</label><input type="date" id="l-date"></div>
+      <div class="field"><label class="field-label">Category</label>
+        <select id="l-cat">
+          <option>Transportation coordination</option>
+          <option>Youth emotional support / crisis</option>
+          <option>Leader-as-participant synthesis</option>
+          <option>Pre-session youth coaching</option>
+          <option>Adult orientation / bias navigation</option>
+          <option>Systems creation (no existing process)</option>
+          <option>Real-time problem solving</option>
+          <option>Other unlisted labor</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">What happened</label><textarea id="l-what" placeholder="Describe the labor concretely — what did you do, how long did it take, what was involved?"></textarea></div>
+    <div class="field"><label class="field-label">Why this matters / what would have broken without it</label><textarea id="l-why" placeholder="If you hadn't done this, what would have failed?"></textarea></div>
+    <button class="btn btn-primary" onclick="saveLaborEntry()" style="width:100%">Save entry</button>
+  </div>
+</div>
+
+<!-- ══ STORY MODAL ══ -->
+<div class="modal-overlay" id="story-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Capture a moment</div>
+      <button class="modal-close" onclick="closeModal('story-modal')">✕</button>
+    </div>
+    <div class="g2">
+      <div class="field"><label class="field-label">Date</label><input type="date" id="s-date"></div>
+      <div class="field"><label class="field-label">Session</label>
+        <select id="s-session">
+          <option>Youth Lab 1 — Feb 21</option>
+          <option>Youth Lab 2 — Feb 28</option>
+          <option>Youth Lab 3 — Mar 14</option>
+          <option>SME Lab 1 — Mar 6</option>
+          <option>SME Lab 2 — Mar 20</option>
+          <option>Youth Lab 4 — Apr 4</option>
+          <option>SME Lab 3 — Apr 17</option>
+          <option>SME Lab 4 — Apr 20 (virtual)</option>
+          <option>SME Lab 5 — Apr 27</option>
+          <option>Youth Lab 5 — May 9</option>
+          <option>C&C Working Group</option>
+          <option>Steering Committee</option>
+          <option>Between sessions</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Who this involves</label>
+      <div class="chips" id="story-who-chips">
+        <span class="chip" onclick="togChip(this,'swho')" data-v="Youth participants">Youth participants</span>
+        <span class="chip" onclick="togChip(this,'swho')" data-v="Delaney">Delaney</span>
+        <span class="chip" onclick="togChip(this,'swho')" data-v="Godspeed">Godspeed</span>
+        <span class="chip" onclick="togChip(this,'swho')" data-v="SME participants">SME participants</span>
+        <span class="chip" onclick="togChip(this,'swho')" data-v="Adult adults in the room">Adults in the room</span>
+        <span class="chip" onclick="togChip(this,'swho')" data-v="The group collectively">The group</span>
+      </div>
+    </div>
+    <div class="field"><label class="field-label">What happened</label><textarea id="s-what" placeholder="Describe the moment — what was said, what shifted, what you witnessed..."></textarea></div>
+    <div class="field"><label class="field-label">Why it matters</label><textarea id="s-why" placeholder="What does this moment tell us about the work? About youth leadership? About what's possible?"></textarea></div>
+    <button class="btn btn-primary" onclick="saveStory()" style="width:100%">Save moment</button>
+  </div>
+</div>
+
+<!-- ══ RESOURCES ══ -->
+<div id="page-resources" class="page">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
+    <div>
+      <div class="section-title">Resources</div>
+      <div class="section-sub" style="margin-bottom:0">All decks, documents, and reference materials in one place. Click to open, copy the link to share.</div>
+    </div>
+  </div>
+
+  <!-- VISION ROADMAP CARD -->
+  <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px;margin-top:.5rem">Visual references</div>
+  <div class="resource-card">
+    <div class="resource-thumb" style="background:var(--cream-mid);overflow:hidden">
+      <img src="https://qeiara.github.io/ConnectionAsPraxis/roadmap.jpg" alt="Vision Roadmap" style="width:100%;height:100%;object-fit:cover;object-position:left center">
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--yellow-pale);color:var(--black)">Vision</div>
+      <div class="resource-name">C&amp;C Vision Roadmap</div>
+      <div class="resource-desc">Foundation → Gap → Scope → Future. The full arc of where HEY! Community &amp; Caregivers has been and where we're headed through 2027.</div>
+      <div class="resource-actions">
+        <a href="https://qeiara.github.io/ConnectionAsPraxis/roadmap.jpg" target="_blank" class="resource-btn">Open ↗</a>
+        <button class="resource-btn" onclick="copyLink('https://qeiara.github.io/ConnectionAsPraxis/roadmap.jpg', this)">Copy link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLACEHOLDER CARDS — REPLACE WITH REAL LINKS WHEN UPLOADED -->
+  <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px;margin-top:1.5rem">Slide decks</div>
+
+  <div class="resource-card resource-placeholder">
+    <div class="resource-thumb resource-thumb-placeholder">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);text-align:center;padding:1rem">Phase 1<br>Deliverables</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--blue-light);color:var(--blue)">Deliverables</div>
+      <div class="resource-name">HEY! Phase 1 Deliverables</div>
+      <div class="resource-desc">Phase 1 outcomes, ecosystem design, narrative roadmap, and Design Lab structure. Presented Feb 27, 2026.</div>
+      <div class="resource-actions">
+        <span class="resource-btn-disabled">Upload to GitHub to activate</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="resource-card resource-placeholder">
+    <div class="resource-thumb resource-thumb-placeholder">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);text-align:center;padding:1rem">C&amp;C<br>March 2026</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--amber-light);color:var(--amber)">Working Group</div>
+      <div class="resource-name">C&amp;C Working Group — March 4, 2026</div>
+      <div class="resource-desc">Vision roadmap recap, assessment findings, Design Lab plan, participant overview, and mental models session.</div>
+      <div class="resource-actions">
+        <span class="resource-btn-disabled">Upload to GitHub to activate</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="resource-card resource-placeholder">
+    <div class="resource-thumb resource-thumb-placeholder">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);text-align:center;padding:1rem">Youth<br>Design Lab 1</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--green-light);color:var(--green)">Youth Lab</div>
+      <div class="resource-name">Youth Design Lab — Session 1</div>
+      <div class="resource-desc">Relationship building, facilitation skills 101, community values and norms. Feb 21, 2026.</div>
+      <div class="resource-actions">
+        <span class="resource-btn-disabled">Upload to GitHub to activate</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="resource-card resource-placeholder">
+    <div class="resource-thumb resource-thumb-placeholder">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);text-align:center;padding:1rem">C&amp;C<br>Strategy</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--amber-light);color:var(--amber)">Strategy</div>
+      <div class="resource-name">C&amp;C Strategy Slides</div>
+      <div class="resource-desc">C&amp;C priorities, three streams of work — Safe Adults, Safe Spaces, Organizational Shifts — and the Design Lab vision and objectives.</div>
+      <div class="resource-actions">
+        <span class="resource-btn-disabled">Upload to GitHub to activate</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--ink-muted);margin-bottom:8px;margin-top:1.5rem">Key documents</div>
+
+  <div class="resource-card">
+    <div class="resource-thumb" style="background:var(--black);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--yellow)">HEY!</div>
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">Needs Assessment</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--purple-light);color:var(--purple)">Research</div>
+      <div class="resource-name">Greater Cincinnati Youth Mental Well-Being Assessment</div>
+      <div class="resource-desc">The foundational needs assessment that surfaced the realities, voices, and unmet needs that led to HEY!'s formation and the C&amp;C working group's strategy.</div>
+      <div class="resource-actions">
+        <a href="https://hopefulempoweredyouth.org/wp-content/uploads/2024/06/Greater-Cincinnati-Youth-Mental-Well-Being-Assessment.pdf" target="_blank" class="resource-btn">Open ↗</a>
+        <button class="resource-btn" onclick="copyLink('https://hopefulempoweredyouth.org/wp-content/uploads/2024/06/Greater-Cincinnati-Youth-Mental-Well-Being-Assessment.pdf', this)">Copy link</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="resource-card">
+    <div class="resource-thumb" style="background:var(--black);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px">
+      <div style="font-family:var(--serif);font-size:18px;font-weight:700;color:var(--yellow)">HEY!</div>
+      <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">Common Agenda</div>
+    </div>
+    <div class="resource-body">
+      <div class="resource-tag" style="background:var(--purple-light);color:var(--purple)">Strategy</div>
+      <div class="resource-name">HEY! Greater Cincinnati Common Agenda</div>
+      <div class="resource-desc">The 10-year collaborative strategy — vision, mission, guiding principles, focus areas, and impact outcomes for youth mental well-being across the region.</div>
+      <div class="resource-actions">
+        <a href="https://www.hopefulempoweredyouth.org/wp-content/uploads/2024/12/2024-09-HEY-Greater-Cincinnati-Common-Agenda-compressed.pdf" target="_blank" class="resource-btn">Open ↗</a>
+        <button class="resource-btn" onclick="copyLink('https://www.hopefulempoweredyouth.org/wp-content/uploads/2024/12/2024-09-HEY-Greater-Cincinnati-Common-Agenda-compressed.pdf', this)">Copy link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO ADD MORE -->
+  <div style="margin-top:2rem;background:var(--cream);border:1px dashed var(--cream-mid);border-radius:var(--radius-lg);padding:1.25rem 1.5rem">
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-muted);margin-bottom:6px">How to activate the placeholder cards</div>
+    <p style="font-size:13px;font-weight:300;color:var(--ink-soft);line-height:1.7;margin-bottom:.5rem">Convert each PPTX to PDF, then upload to your GitHub repo (<code style="font-family:var(--mono);font-size:12px;background:var(--cream-mid);padding:1px 5px;border-radius:2px">Qeiara/ConnectionAsPraxis</code>). Once uploaded, the file lives at <code style="font-family:var(--mono);font-size:12px;background:var(--cream-mid);padding:1px 5px;border-radius:2px">https://qeiara.github.io/ConnectionAsPraxis/filename.pdf</code> — share that link with me and I'll activate the card in one update.</p>
+    <p style="font-size:12px;font-weight:300;color:var(--ink-muted);line-height:1.6">To convert PPTX to PDF: open in PowerPoint → File → Save As → PDF. Or open in Google Slides → File → Download → PDF.</p>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+let activities = JSON.parse(localStorage.getItem('cc_activities') || '[]');
+let laborEntries = JSON.parse(localStorage.getItem('cc_labor') || '[]');
+let stories = JSON.parse(localStorage.getItem('cc_stories') || '[]');
+let deliverables = JSON.parse(localStorage.getItem('cc_deliverables') || 'null');
+
+const ACTIVITY_COLORS = {
+  'SME Lab session': '#1a4a7a',
+  'Youth Design Lab': '#1a6b45',
+  'TiER1 1:1 strategy': '#4a2080',
+  'C&C core leadership': '#b85c00',
+  'C&C Working Group': '#b85c00',
+  'Youth coaching': '#1a6b45',
+  'Planning and prep': '#5a5750',
+  'Transportation coordination': '#8b1a1a',
+  'Post-session synthesis': '#4a2080',
+  'Stakeholder communications': '#5a5750'
+};
+
+const ACTIVITY_BG = {
+  'SME Lab session': '#e4eef8',
+  'Youth Design Lab': '#e4f5ec',
+  'TiER1 1:1 strategy': '#efe8f8',
+  'C&C core leadership': '#fdf0e0',
+  'C&C Working Group': '#fdf0e0',
+  'Youth coaching': '#e4f5ec',
+  'Planning and prep': '#f1efe8',
+  'Transportation coordination': '#fde8e8',
+  'Post-session synthesis': '#efe8f8',
+  'Stakeholder communications': '#f1efe8'
+};
+
+// Pre-populate deliverables if none exist
+if (!deliverables) {
+  deliverables = [
+    { id: '1', name: 'Ecosystem narrative (C&C past, present, future)', cat: 'Ecosystem Narrative', notes: 'Owned by Qeiara. In progress.', pct: 40 },
+    { id: '2', name: 'Safe & Trusted Adult Training — alpha draft', cat: 'Safe Adult Training', notes: 'Training content, youth facilitator guide & training, participant guide, metrics & feedback plan, implementation plan.', pct: 20 },
+    { id: '3', name: 'Cohort Model Playbook — alpha draft', cat: 'Cohort Model Playbook', notes: 'Curriculum outline, outcomes & learning objectives, identified facilitators, org assessment & vetting, metrics & eval plan.', pct: 15 },
+    { id: '4', name: 'How to be a Great Facilitator training', cat: 'Youth Lab', notes: 'Completed. Built to support consistent delivery by youth co-facilitators.', pct: 100 },
+    { id: '5', name: 'SME pipeline — recruitment & contracting', cat: 'Design Lab Operations', notes: '25 applicants, info session, 4-week process, 12 interviews. Complete.', pct: 100 },
+    { id: '6', name: 'Transportation system for youth participants', cat: 'Design Lab Operations', notes: 'No system in place yet. Currently handled manually per session.', pct: 10 },
+    { id: '7', name: 'Participant agreement template', cat: 'Design Lab Operations', notes: 'In progress. Contracting coordination with TiER1 and Interact for Health.', pct: 75 }
+  ];
+  localStorage.setItem('cc_deliverables', JSON.stringify(deliverables));
+}
+
+// ── SESSION DATA ──
+const SESSIONS = [
+  { id: 's1', date: 'Feb 21', fullDate: '2026-02-21', type: 'youth', label: 'Youth Lab 1', subLabel: 'Relationship building (3hr)', phase: 'Ideate', status: 'done' },
+  { id: 's2', date: 'Feb 28', fullDate: '2026-02-28', type: 'youth', label: 'Youth Lab 2', subLabel: 'Ideation (3hr)', phase: 'Ideate', status: 'done' },
+  { id: 's3', date: 'Mar 6', fullDate: '2026-03-06', type: 'sme', label: 'SME Lab 1', subLabel: 'Foundations (8hr)', phase: 'Frame', status: 'done' },
+  { id: 's4', date: 'Mar 9', fullDate: '2026-03-09', type: 'cc', label: 'C&C Working Group', subLabel: 'Alignment (March)', phase: 'Frame', status: 'done' },
+  { id: 's5', date: 'Mar 14', fullDate: '2026-03-14', type: 'youth', label: 'Youth Lab 3', subLabel: 'Feedback (3hr)', phase: 'Frame', status: 'done' },
+  { id: 's6', date: 'Mar 17', fullDate: '2026-03-17', type: 'steering', label: 'Steering Committee', subLabel: 'Alignment', phase: 'Build', status: 'active' },
+  { id: 's7', date: 'Mar 20', fullDate: '2026-03-20', type: 'sme', label: 'SME Lab 2', subLabel: 'Build (8hr)', phase: 'Build', status: 'active' },
+  { id: 's8', date: 'Apr 4', fullDate: '2026-04-04', type: 'youth', label: 'Youth Lab 4', subLabel: 'Feedback (3hr)', phase: 'Refine', status: 'upcoming' },
+  { id: 's9', date: 'Apr 6', fullDate: '2026-04-06', type: 'cc', label: 'C&C Working Group', subLabel: 'Alignment (April)', phase: 'Refine', status: 'upcoming' },
+  { id: 's10', date: 'Apr 17', fullDate: '2026-04-17', type: 'sme', label: 'SME Lab 3', subLabel: 'Finalize (4hr)', phase: 'Refine', status: 'upcoming' },
+  { id: 's11', date: 'Apr 20', fullDate: '2026-04-20', type: 'sme', label: 'SME Lab 4', subLabel: 'Prep (2hr virtual)', phase: 'Communicate', status: 'upcoming' },
+  { id: 's12', date: 'Apr 27', fullDate: '2026-04-27', type: 'sme', label: 'SME Lab 5', subLabel: 'Present (2hr)', phase: 'Communicate', status: 'upcoming' },
+  { id: 's13', date: 'Apr 27', fullDate: '2026-04-27', type: 'steering', label: 'Steering & C&C Presentation', subLabel: 'Final presentation', phase: 'Communicate', status: 'upcoming' },
+  { id: 's14', date: 'May 9', fullDate: '2026-05-09', type: 'youth', label: 'Youth Lab 5', subLabel: 'Celebrate (2hr)', phase: 'Launch', status: 'upcoming' }
+];
+
+const sessionNotes = JSON.parse(localStorage.getItem('cc_session_notes') || '{}');
+
+// ── NAV ──
+function goPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('page-' + name).classList.add('on');
+  btn.classList.add('on');
+  if (name === 'overview') refreshOverview();
+  if (name === 'timeline') buildTimeline();
+  if (name === 'activity') renderActivities();
+  if (name === 'invisible') renderLabor();
+  if (name === 'stories') renderStories();
+  if (name === 'deliverables') renderDeliverables();
+  if (name === 'resources') {} // static page, no render needed
+}
+
+// ── TIMELINE ──
+function buildTimeline() {
+  const el = document.getElementById('timeline-list');
+  el.innerHTML = '';
+  SESSIONS.forEach(s => {
+    const notes = sessionNotes[s.id] || {};
+    const typeClass = 'type-' + s.type;
+    const statusClass = 'status-' + s.status;
+    const statusLabel = s.status === 'done' ? 'Complete' : s.status === 'active' ? 'Active / recent' : 'Upcoming';
+    const div = document.createElement('div');
+    div.className = `tl-item ${s.status}`;
+    div.innerHTML = `
+      <div class="tl-dot"></div>
+      <div class="tl-card" onclick="toggleTL('${s.id}')">
+        <div class="tl-top">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span class="tl-date">${s.date}</span>
+              <span class="tl-type ${typeClass}">${s.type === 'youth' ? 'Youth Lab' : s.type === 'sme' ? 'SME Lab' : s.type === 'cc' ? 'C&C WG' : 'Steering'}</span>
+              <span style="font-family:var(--mono);font-size:9px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em">${s.phase}</span>
+            </div>
+            <div class="tl-name">${s.label}</div>
+            <div class="tl-phase">${s.subLabel}</div>
+          </div>
+          <div class="tl-status ${statusClass}">${statusLabel}</div>
+        </div>
+        <div class="tl-expand" id="tl-exp-${s.id}">
+          <div class="field" style="margin-bottom:8px">
+            <label class="field-label">What happened / prep notes</label>
+            <textarea style="min-height:60px" placeholder="What did you do to prepare? What happened in the session? What was unexpected?" onchange="saveSessionNote('${s.id}','what',this.value)">${notes.what||''}</textarea>
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label class="field-label">Invisible labor in this session</label>
+            <textarea style="min-height:50px" placeholder="Transportation, youth support, synthesis on breaks, pre-session coaching..." onchange="saveSessionNote('${s.id}','invisible',this.value)">${notes.invisible||''}</textarea>
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label class="field-label">A moment worth noting</label>
+            <textarea style="min-height:50px" placeholder="One thing that showed the work is landing..." onchange="saveSessionNote('${s.id}','moment',this.value)">${notes.moment||''}</textarea>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="field-label" style="margin:0">Hours this session:</label>
+            <input type="number" min="0" max="24" step="0.5" value="${notes.hours||''}" placeholder="0" style="width:80px;margin:0" onchange="saveSessionNote('${s.id}','hours',this.value)">
+            <button class="btn btn-sm btn-primary" onclick="markSessionDone('${s.id}', event)">Mark complete</button>
+          </div>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function toggleTL(id) {
+  const exp = document.getElementById('tl-exp-' + id);
+  exp.classList.toggle('open');
+}
+
+function saveSessionNote(id, key, val) {
+  if (!sessionNotes[id]) sessionNotes[id] = {};
+  sessionNotes[id][key] = val;
+  localStorage.setItem('cc_session_notes', JSON.stringify(sessionNotes));
+}
+
+function markSessionDone(id, e) {
+  e.stopPropagation();
+  const s = SESSIONS.find(x => x.id === id);
+  if (s) { s.status = 'done'; buildTimeline(); refreshOverview(); toast('Session marked complete'); }
+}
+
+// ── ACTIVITY ──
+function openActivityModal() {
+  try { document.getElementById('a-date').valueAsDate = new Date(); } catch(e){}
+  document.getElementById('activity-modal').classList.add('open');
+}
+
+function saveActivity() {
+  const type = getChip('atype');
+  const layer = getChip('layer');
+  const date = document.getElementById('a-date').value;
+  const hours = parseFloat(document.getElementById('a-hours').value) || 0;
+  const notes = document.getElementById('a-notes').value.trim();
+  if (!type || !date || !hours) { toast('Fill in date, type, and hours'); return; }
+  activities.unshift({ id: Date.now().toString(), type, layer, date, hours, notes, savedAt: new Date().toISOString() });
+  localStorage.setItem('cc_activities', JSON.stringify(activities));
+  closeModal('activity-modal');
+  clearChips('atype'); clearChips('layer');
+  document.getElementById('a-notes').value = '';
+  document.getElementById('a-hours').value = '';
+  renderActivities();
+  refreshOverview();
+  toast('Activity logged');
+}
+
+function renderActivities() {
+  const el = document.getElementById('activity-list');
+  const emp = document.getElementById('activity-empty');
+  el.innerHTML = '';
+  if (!activities.length) { emp.style.display = 'block'; return; }
+  emp.style.display = 'none';
+  activities.forEach(a => {
+    const color = ACTIVITY_COLORS[a.type] || '#5a5750';
+    const bg = ACTIVITY_BG[a.type] || '#f1efe8';
+    const d = document.createElement('div');
+    d.className = 'log-entry';
+    d.innerHTML = `
+      <div class="log-dot" style="background:${color}"></div>
+      <div class="log-body">
+        <div class="log-top">
+          <span class="log-type-badge" style="background:${bg};color:${color}">${a.type}</span>
+          <span class="log-date">${formatDate(a.date)}</span>
+          <span class="log-hrs">${a.hours}h</span>
+          ${a.layer ? `<span style="font-size:10px;color:var(--ink-muted);font-style:italic">${a.layer}</span>` : ''}
+        </div>
+        ${a.notes ? `<div class="log-notes">${a.notes}</div>` : ''}
+      </div>
+      <button onclick="deleteActivity('${a.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:14px;flex-shrink:0;padding:2px 6px" title="Delete">✕</button>`;
+    el.appendChild(d);
+  });
+}
+
+function deleteActivity(id) {
+  activities = activities.filter(a => a.id !== id);
+  localStorage.setItem('cc_activities', JSON.stringify(activities));
+  renderActivities();
+  refreshOverview();
+  toast('Removed');
+}
+
+// ── INVISIBLE LABOR ──
+function openLaborModal() {
+  try { document.getElementById('l-date').valueAsDate = new Date(); } catch(e){}
+  document.getElementById('labor-modal').classList.add('open');
+}
+
+function saveLaborEntry() {
+  const date = document.getElementById('l-date').value;
+  const cat = document.getElementById('l-cat').value;
+  const what = document.getElementById('l-what').value.trim();
+  const why = document.getElementById('l-why').value.trim();
+  if (!date || !what) { toast('Fill in date and description'); return; }
+  laborEntries.unshift({ id: Date.now().toString(), date, cat, what, why, savedAt: new Date().toISOString() });
+  localStorage.setItem('cc_labor', JSON.stringify(laborEntries));
+  closeModal('labor-modal');
+  document.getElementById('l-what').value = '';
+  document.getElementById('l-why').value = '';
+  renderLabor();
+  refreshOverview();
+  toast('Entry saved');
+}
+
+function renderLabor() {
+  const el = document.getElementById('labor-list');
+  const emp = document.getElementById('labor-empty');
+  el.innerHTML = '';
+  if (!laborEntries.length) { emp.style.display = 'block'; return; }
+  emp.style.display = 'none';
+  laborEntries.forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'labor-entry';
+    d.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <span class="labor-entry-cat">${l.cat}</span>
+            <span class="labor-entry-date">${formatDate(l.date)}</span>
+          </div>
+          <div class="labor-entry-text">${l.what}</div>
+          ${l.why ? `<div style="font-size:12px;color:var(--ink-muted);margin-top:6px;font-style:italic;line-height:1.6">Why it mattered: ${l.why}</div>` : ''}
+        </div>
+        <button onclick="deleteLabor('${l.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:14px;flex-shrink:0" title="Delete">✕</button>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function deleteLabor(id) {
+  laborEntries = laborEntries.filter(l => l.id !== id);
+  localStorage.setItem('cc_labor', JSON.stringify(laborEntries));
+  renderLabor();
+  refreshOverview();
+  toast('Removed');
+}
+
+// ── STORIES ──
+function openStoryModal() {
+  try { document.getElementById('s-date').valueAsDate = new Date(); } catch(e){}
+  document.getElementById('story-modal').classList.add('open');
+}
+
+function saveStory() {
+  const date = document.getElementById('s-date').value;
+  const session = document.getElementById('s-session').value;
+  const who = getChip('swho');
+  const what = document.getElementById('s-what').value.trim();
+  const why = document.getElementById('s-why').value.trim();
+  if (!date || !what) { toast('Fill in date and what happened'); return; }
+  stories.unshift({ id: Date.now().toString(), date, session, who, what, why, savedAt: new Date().toISOString() });
+  localStorage.setItem('cc_stories', JSON.stringify(stories));
+  closeModal('story-modal');
+  clearChips('swho');
+  document.getElementById('s-what').value = '';
+  document.getElementById('s-why').value = '';
+  renderStories();
+  refreshOverview();
+  toast('Moment captured');
+}
+
+function renderStories() {
+  const el = document.getElementById('story-list');
+  const emp = document.getElementById('story-empty');
+  el.innerHTML = '';
+  if (!stories.length) { emp.style.display = 'block'; return; }
+  emp.style.display = 'none';
+  stories.forEach(s => {
+    const d = document.createElement('div');
+    d.className = 'story-card';
+    d.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1">
+          <div class="story-meta">
+            ${s.who ? `<span class="story-who">${s.who}</span>` : ''}
+            <span class="story-session">${s.session}</span>
+            <span class="story-date">${formatDate(s.date)}</span>
+          </div>
+          <div class="story-text">"${s.what}"</div>
+          ${s.why ? `<div class="story-why">Why this matters: ${s.why}</div>` : ''}
+        </div>
+        <button onclick="deleteStory('${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:14px;flex-shrink:0" title="Delete">✕</button>
+      </div>`;
+    el.appendChild(d);
+  });
+}
+
+function deleteStory(id) {
+  stories = stories.filter(s => s.id !== id);
+  localStorage.setItem('cc_stories', JSON.stringify(stories));
+  renderStories();
+  refreshOverview();
+  toast('Removed');
+}
+
+// ── DELIVERABLES ──
+function renderDeliverables() {
+  const el = document.getElementById('deliverables-list');
+  el.innerHTML = '';
+  deliverables.forEach(d => {
+    const div = document.createElement('div');
+    div.className = 'deliverable-card';
+    div.innerHTML = `
+      <div class="deliv-header">
+        <div>
+          <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);margin-bottom:3px">${d.cat}</div>
+          <div class="deliv-name">${d.name}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--amber)">${d.pct}%</span>
+          <input type="number" min="0" max="100" value="${d.pct}" style="width:60px;padding:4px 8px;font-size:12px;margin:0" onchange="updateDeliv('${d.id}',parseInt(this.value)||0)">
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${d.pct}%"></div></div>
+      <div class="deliv-notes">${d.notes}</div>`;
+    el.appendChild(div);
+  });
+}
+
+function updateDeliv(id, pct) {
+  const d = deliverables.find(x => x.id === id);
+  if (d) { d.pct = Math.max(0, Math.min(100, pct)); localStorage.setItem('cc_deliverables', JSON.stringify(deliverables)); renderDeliverables(); toast('Progress updated'); }
+}
+
+function addDeliverable() {
+  const name = document.getElementById('new-deliv-name').value.trim();
+  const cat = document.getElementById('new-deliv-cat').value;
+  const notes = document.getElementById('new-deliv-notes').value.trim();
+  const pct = parseInt(document.getElementById('new-deliv-pct').value) || 0;
+  if (!name) { toast('Enter a name'); return; }
+  deliverables.push({ id: Date.now().toString(), name, cat, notes, pct });
+  localStorage.setItem('cc_deliverables', JSON.stringify(deliverables));
+  document.getElementById('new-deliv-name').value = '';
+  document.getElementById('new-deliv-notes').value = '';
+  document.getElementById('new-deliv-pct').value = '0';
+  renderDeliverables();
+  toast('Deliverable added');
+}
+
+// ── OVERVIEW ──
+function refreshOverview() {
+  const doneSessions = SESSIONS.filter(s => s.status === 'done').length;
+  const totalHours = activities.reduce((a, b) => a + (b.hours || 0), 0);
+  document.getElementById('stat-sessions').textContent = doneSessions;
+  document.getElementById('stat-hours').textContent = totalHours % 1 === 0 ? totalHours : totalHours.toFixed(1);
+  document.getElementById('stat-invisible').textContent = laborEntries.length;
+  document.getElementById('stat-stories').textContent = stories.length;
+
+  // Activity bars
+  const totals = {};
+  activities.forEach(a => { totals[a.type] = (totals[a.type] || 0) + a.hours; });
+  const maxH = Math.max(...Object.values(totals), 1);
+  const barsEl = document.getElementById('overview-bars');
+  barsEl.innerHTML = '';
+  if (!Object.keys(totals).length) { barsEl.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);font-weight:300;font-style:italic;margin-bottom:1rem">Log activities to see time breakdown.</p>'; }
+  else {
+    Object.entries(totals).sort((a,b)=>b[1]-a[1]).forEach(([type, hrs]) => {
+      const pct = Math.round((hrs / maxH) * 100);
+      const color = ACTIVITY_COLORS[type] || '#5a5750';
+      barsEl.innerHTML += `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:300;color:var(--ink-soft);width:200px;flex-shrink:0">${type}</div>
+        <div style="flex:1;height:6px;background:var(--cream-mid);border-radius:2px;overflow:hidden"><div style="height:100%;background:${color};border-radius:2px;width:${pct}%"></div></div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);width:36px;text-align:right">${hrs}h</div>
+      </div>`;
+    });
+  }
+
+  // Recent
+  const recentEl = document.getElementById('overview-recent');
+  recentEl.innerHTML = '';
+  if (!activities.length) { recentEl.innerHTML = '<p style="font-size:13px;color:var(--ink-muted);font-weight:300;font-style:italic">No activity logged yet.</p>'; return; }
+  activities.slice(0,5).forEach(a => {
+    const color = ACTIVITY_COLORS[a.type] || '#5a5750';
+    const bg = ACTIVITY_BG[a.type] || '#f1efe8';
+    recentEl.innerHTML += `<div class="log-entry" style="margin-bottom:6px">
+      <div class="log-dot" style="background:${color}"></div>
+      <div class="log-body">
+        <div class="log-top">
+          <span class="log-type-badge" style="background:${bg};color:${color}">${a.type}</span>
+          <span class="log-date">${formatDate(a.date)}</span>
+          <span class="log-hrs">${a.hours}h</span>
+        </div>
+        ${a.notes ? `<div class="log-notes" style="margin-top:2px">${a.notes}</div>` : ''}
+      </div>
+    </div>`;
+  });
+}
+
+// ── CHIPS ──
+function togChip(el, group) {
+  document.querySelectorAll(`#${group === 'atype' ? 'activity-type-chips' : group === 'layer' ? 'layer-chips' : group === 'swho' ? 'story-who-chips' : 'story-who-chips'} .chip`).forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+function getChip(group) {
+  const containerId = group === 'atype' ? 'activity-type-chips' : group === 'layer' ? 'layer-chips' : 'story-who-chips';
+  const el = document.querySelector(`#${containerId} .chip.on`);
+  return el ? el.dataset.v : '';
+}
+function clearChips(group) {
+  const containerId = group === 'atype' ? 'activity-type-chips' : group === 'layer' ? 'layer-chips' : 'story-who-chips';
+  document.querySelectorAll(`#${containerId} .chip`).forEach(c => c.classList.remove('on'));
+}
+
+// ── MODAL ──
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+
+// ── UTILS ──
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ── PAGES MENU ──
+function togglePagesMenu() {
+  const menu = document.getElementById('pages-menu');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#pages-btn') && !e.target.closest('#pages-menu')) {
+    const menu = document.getElementById('pages-menu');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
+// ── ROADMAP ZOOM ──
+function toggleRoadmapZoom(img) {
+  img.classList.toggle('roadmap-zoomed');
+  img.style.cursor = img.classList.contains('roadmap-zoomed') ? 'zoom-out' : 'zoom-in';
+}
+
+// ── COPY LINK ──
+function copyLink(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.background = 'var(--green-light)';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2000);
+  });
+}
+
+// ── CONTEXT ACCORDION ──
+function toggleCtx(id) {
+  const body = document.getElementById('ctx-body-' + id.replace('ctx-',''));
+  const chev = document.getElementById('ctx-chev-' + id.replace('ctx-',''));
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.textContent = isOpen ? '▸' : '▾';
+}
+
+// Open first section by default
+document.addEventListener('DOMContentLoaded', () => {
+  const first = document.getElementById('ctx-body-1');
+  const chev = document.getElementById('ctx-chev-1');
+  if (first) { first.classList.add('open'); if (chev) chev.textContent = '▾'; }
+});
+
+// ── INIT ──
+refreshOverview();
+</script>
+</body>
+</html>
